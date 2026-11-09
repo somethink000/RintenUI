@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- The interface toolkit: panels, styles, layout, Razor, controls, text. No engine; a host draws it - the engine, or Rinten.UI.Native for apps. -->
+
+	<PropertyGroup>
+		<AssemblyName>Rinten.UI</AssemblyName>
+		<RootNamespace>Rinten.UI</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../Core/Rinten.Core.csproj" />
+		<ProjectReference Include="../Filesystem/Rinten.Filesystem.csproj" />
+		<ProjectReference Include="../Layout/Rinten.Layout.csproj" />
+		<ProjectReference Include="../ThirdParty/Topten.RichTextKit/Topten.RichTextKit.csproj" />
+		<ProjectReference Include="../ThirdParty/Microsoft.AspNetCore.Components/Microsoft.AspNetCore.Components.csproj" />
+		<PackageReference Include="SkiaSharp" Version="3.116.0" />
+		<PackageReference Include="SkiaSharp.HarfBuzz" Version="3.116.0" />
+		<PackageReference Include="Svg.Skia" Version="2.0.0.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Update="Styles\BaseStyles.Generated.cs">
+			<DependentUpon>BaseStyles.Generated.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<None Update="Styles\BaseStyles.Generated.tt">
+			<LastGenOutput>BaseStyles.Generated.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+	</ItemGroup>
+
+</Project>

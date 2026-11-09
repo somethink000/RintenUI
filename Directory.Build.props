@@ -1,0 +1,21 @@
+<Project>
+
+	<!-- Every project here. Rinten builds the same sources with its own project files; these are for the library on its own. -->
+
+	<PropertyGroup>
+		<Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+		<TargetFramework>net10.0</TargetFramework>
+		<LangVersion>14</LangVersion>
+		<Nullable>disable</Nullable>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+		<NoWarn>1701;1702;1591;CA1416</NoWarn>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+		<VersionPrefix>0.1.0</VersionPrefix>
+		<Authors>Rinten contributors</Authors>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/somethink000/Rinten-UI</RepositoryUrl>
+	</PropertyGroup>
+
+</Project>

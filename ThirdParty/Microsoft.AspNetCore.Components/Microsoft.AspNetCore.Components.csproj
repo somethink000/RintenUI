@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- The few types Razor's compiler emits calls to, so .razor files build without ASP.NET. -->
+
+	<PropertyGroup>
+		<AssemblyName>Microsoft.AspNetCore.Components</AssemblyName>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+	</PropertyGroup>
+
+</Project>

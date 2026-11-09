@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- A window for an app built on the toolkit: SDL3 opens it and reads the keyboard and mouse, OpenGL 3.3 draws the panels with
+	     the engine's box shader ported to GLSL. One window, one root panel - see App.Run. -->
+
+	<PropertyGroup>
+		<AssemblyName>Rinten.UI.Native</AssemblyName>
+		<RootNamespace>Rinten.UI.Native</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../UI/Rinten.UI.csproj" />
+		<!-- Skia and HarfBuzz themselves, which the toolkit's packages leave to the host -->
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.116.0" />
+		<PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Shaders/*.glsl" LogicalName="%(Filename)%(Extension)" />
+		<!-- SDL 3.4 as the engine ships it, until there is a package of it; Linux x64 only for now -->
+		<None Include="runtimes/linux-x64/native/libSDL3.so" Link="libSDL3.so" CopyToOutputDirectory="PreserveNewest" Pack="true" PackagePath="runtimes/linux-x64/native" />
+	</ItemGroup>
+
+</Project>

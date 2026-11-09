@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- Maths, colour, the html parser, attributes and logging the toolkit is written in; inside Rinten these are part of Rinten.System. -->
+
+	<PropertyGroup>
+		<AssemblyName>Rinten.Core</AssemblyName>
+		<RootNamespace>Rinten</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- ToMetric's 1.1k, the same as the engine's -->
+		<PackageReference Include="Humanizer.Core" Version="2.14.1" />
+	</ItemGroup>
+
+</Project>

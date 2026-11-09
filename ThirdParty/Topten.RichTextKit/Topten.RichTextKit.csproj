@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- RichTextKit, Apache-2.0, Topten Software - changed for Rinten: its colours, its text effects. -->
+
+	<PropertyGroup>
+		<AssemblyName>Topten.RichTextKit</AssemblyName>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateDocumentationFile>false</GenerateDocumentationFile>
+		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../../Core/Rinten.Core.csproj" />
+		<PackageReference Include="SkiaSharp" Version="3.116.0" />
+		<PackageReference Include="SkiaSharp.HarfBuzz" Version="3.116.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\BidiClasses.trie" LogicalName="Topten.RichTextKit.Resources.BidiClasses.trie" />
+		<EmbeddedResource Include="Resources\GraphemeClusterClasses.trie" LogicalName="Topten.RichTextKit.Resources.GraphemeClusterClasses.trie" />
+		<EmbeddedResource Include="Resources\LineBreakClasses.trie" LogicalName="Topten.RichTextKit.Resources.LineBreakClasses.trie" />
+		<EmbeddedResource Include="Resources\WordBoundaryClasses.trie" LogicalName="Topten.RichTextKit.Resources.WordBoundaryClasses.trie" />
+	</ItemGroup>
+
+</Project>

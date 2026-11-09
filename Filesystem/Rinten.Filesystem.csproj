@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!-- The files an interface reads its stylesheets, fonts and pictures from, over Zio; watched for changes. -->
+
+	<PropertyGroup>
+		<AssemblyName>Rinten.Filesystem</AssemblyName>
+		<RootNamespace>Rinten</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="../Core/Rinten.Core.csproj" />
+		<PackageReference Include="Zio" Version="0.23.0" />
+	</ItemGroup>
+
+</Project>

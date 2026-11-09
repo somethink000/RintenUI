@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="Core/Rinten.Core.csproj" />
+  <Project Path="Filesystem/Rinten.Filesystem.csproj" />
+  <Project Path="Layout/Rinten.Layout.csproj" />
+  <Project Path="ThirdParty/Microsoft.AspNetCore.Components/Microsoft.AspNetCore.Components.csproj" />
+  <Project Path="ThirdParty/Topten.RichTextKit/Topten.RichTextKit.csproj" />
+  <Project Path="UI/Rinten.UI.csproj" />
+  <Project Path="Native/Rinten.UI.Native.csproj" />
+  <Project Path="Razor/Rinten.Razor/Rinten.Razor.csproj" />
+  <Project Path="Razor/RazorGen/RazorGen.csproj" />
+</Solution>

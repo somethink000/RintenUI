@@ -1,0 +1,47 @@
+<Project>
+
+	<!--
+		Razor for an app built on the toolkit: import this, and every .razor in the project is compiled with Rinten's own Razor
+		(Rinten.Razor, the fork the engine compiles its games with) rather than the SDK's. The SDK's writes child components as
+		calls the toolkit's render tree leaves empty; this one writes what the panels build from.
+
+		Use Microsoft.NET.Sdk, not Microsoft.NET.Sdk.Razor, so the SDK's own Razor does not run as well.
+		The generated C# lands in obj/.razor: build output, not something to edit or check in.
+		The same as the engine's Razor.Targets, with the tool beside this file.
+	-->
+
+	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+		<RazorGenExe Condition="'$(RazorGenExe)' == ''">$(MSBuildThisFileDirectory)RazorGen\bin\RazorGen.exe</RazorGenExe>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
+		<RazorGenExe Condition="'$(RazorGenExe)' == ''">$(MSBuildThisFileDirectory)RazorGen/bin/RazorGen</RazorGenExe>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="$(MSBuildThisFileDirectory)RazorGen/RazorGen.csproj"
+			OutputItemType="RazorGenTool" ReferenceOutputAssembly="false" Private="false" />
+	</ItemGroup>
+
+	<!-- The markup itself is not compiled, only watched: a change to it rebuilds. -->
+	<ItemGroup>
+		<None Include="**/*.razor" Exclude="obj/**;bin/**" />
+		<UpToDateCheckInput Include="**/*.razor" Exclude="obj/**;bin/**" />
+	</ItemGroup>
+
+	<Target Name="RazorGenFiles" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
+
+		<Exec Command="&quot;$(RazorGenExe)&quot; &quot;$(MSBuildProjectDirectory)&quot; &quot;$(RootNamespace)&quot;" />
+
+		<ItemGroup>
+			<RazorGenerated Include="obj/.razor/**/*.g.cs" />
+			<Compile Include="@(RazorGenerated)" />
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="CleanRazorGen" AfterTargets="Clean">
+		<RemoveDir Directories="obj/.razor" />
+	</Target>
+
+</Project>
