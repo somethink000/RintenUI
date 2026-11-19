@@ -9,20 +9,25 @@ internal class WorldPanelInput : PanelInput
 	internal Vector2 MouseWheel;
 	internal bool UseMouseInput;
 
+	//The panels the ray hits this frame, kept between frames
+	private readonly List<RootPanel> worldPanels = new();
+	private static readonly Comparison<RootPanel> ByDistance = ( a, b ) => a.WorldDistance.CompareTo( b.WorldDistance );
+
 	internal override void Tick( IReadOnlyList<RootPanel> panels, bool mouseIsActive )
 	{
 		bool hoveredAny = false;
 		var inputData = GetInputData();
 
-		List<RootPanel> worldPanels = new();
-		foreach ( var panel in panels.Where( p => p.ChildrenWantMouseInput ) )
+		worldPanels.Clear();
+		foreach ( var panel in panels )
 		{
-			if ( panel.RayToLocalPosition( Ray, out panel.WorldCursor, out panel.WorldDistance ) )
+			if ( panel.ChildrenWantMouseInput && panel.RayToLocalPosition( Ray, out panel.WorldCursor, out panel.WorldDistance ) )
 				worldPanels.Add( panel );
 		}
 
 		//In order of distance, update our mouse on them
-		foreach ( var panel in worldPanels.OrderBy( x => x.WorldDistance ) )
+		worldPanels.Sort( ByDistance );
+		foreach ( var panel in worldPanels )
 		{
 			inputData.MousePos = panel.WorldCursor;
 			if ( UpdateMouse( panel, inputData ) )
