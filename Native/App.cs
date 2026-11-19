@@ -65,16 +65,7 @@ public static unsafe class App
 
 	private static void Open( string title, int width, int height )
 	{
-		ThreadSafe.MarkMainThread();
-
-		if ( !Sdl.SDL_Init( Sdl.InitVideo ) ) throw new InvalidOperationException( $"SDL: {Sdl.Error()}" );
-
-		Sdl.SDL_GL_SetAttribute( Sdl.GlContextMajor, 3 );
-		Sdl.SDL_GL_SetAttribute( Sdl.GlContextMinor, 3 );
-		Sdl.SDL_GL_SetAttribute( Sdl.GlContextProfile, Sdl.GlProfileCore );
-		Sdl.SDL_GL_SetAttribute( Sdl.GlDoubleBuffer, 1 );
-		Sdl.SDL_GL_SetAttribute( Sdl.GlDepthSize, 0 );
-		Sdl.SDL_GL_SetAttribute( Sdl.GlStencilSize, 0 );
+		StartSdl();
 
 		Window = Sdl.SDL_CreateWindow( title, width, height,
 			Sdl.WindowOpenGl | Sdl.WindowResizable | Sdl.WindowHighPixelDensity | Sdl.WindowHidden );
@@ -88,6 +79,33 @@ public static unsafe class App
 		renderer.Init();
 		Log.Info( $"window: {renderer.Device}" );
 
+		StartHost();
+		UiHost.Window = new AppWindowHost();
+
+		Measure();
+	}
+
+	//SDL and the GL surface every window is made with, before the first window
+	internal static void StartSdl()
+	{
+		ThreadSafe.MarkMainThread();
+
+		//A click that brings a window forward is still a click; SDL drops it by default
+		Sdl.SDL_SetHint( "SDL_MOUSE_FOCUS_CLICKTHROUGH", "1" );
+
+		if ( !Sdl.SDL_Init( Sdl.InitVideo ) ) throw new InvalidOperationException( $"SDL: {Sdl.Error()}" );
+
+		Sdl.SDL_GL_SetAttribute( Sdl.GlContextMajor, 3 );
+		Sdl.SDL_GL_SetAttribute( Sdl.GlContextMinor, 3 );
+		Sdl.SDL_GL_SetAttribute( Sdl.GlContextProfile, Sdl.GlProfileCore );
+		Sdl.SDL_GL_SetAttribute( Sdl.GlDoubleBuffer, 1 );
+		Sdl.SDL_GL_SetAttribute( Sdl.GlDepthSize, 0 );
+		Sdl.SDL_GL_SetAttribute( Sdl.GlStencilSize, 0 );
+	}
+
+	//What the toolkit asks of an app's backend: tasks, textures, clipboard, fonts
+	internal static void StartHost()
+	{
 		Rinten.Tasks.SyncContext.Init();
 
 		UiHost.Textures = new GlTextureHost();
@@ -95,8 +113,6 @@ public static unsafe class App
 		UiHost.GetClipboard = Sdl.ClipboardText;
 
 		FontManager.Instance.LoadAll( UiContext.Current.FileMount );
-
-		Measure();
 	}
 
 	//RINTEN_UI_SHOT=file.png writes a frame and closes, RINTEN_UI_SHOT_SECONDS after the start (2 by default): layout, fonts and pictures settle first
@@ -139,14 +155,12 @@ public static unsafe class App
 		Sdl.SDL_GL_SwapWindow( Window );
 	}
 
-	//── input ──────────────────────────────────────────────────────────────
-
 	private static Vector2 lastPointer;
 	private static Vector2 lastClickAt;
 	private static double lastClickTime;
 	private static int clicks;
 
-	private static KeyboardModifiers Modifiers( ushort mod )
+	internal static KeyboardModifiers Modifiers( ushort mod )
 	{
 		var m = KeyboardModifiers.None;
 		if ( (mod & Sdl.ModShift) != 0 ) m |= KeyboardModifiers.Shift;
@@ -233,7 +247,7 @@ public static unsafe class App
 		}
 	}
 
-	private static void Key( UISystem ui, ButtonCode button, bool down, bool repeat, KeyboardModifiers modifiers )
+	internal static void Key( UISystem ui, ButtonCode button, bool down, bool repeat, KeyboardModifiers modifiers )
 	{
 		if ( down ) ui.InputEventQueue.AddButtonTyped( button, modifiers );
 
@@ -275,12 +289,10 @@ public static unsafe class App
 		ui.Input.AddMouseButton( button, down, modifiers );
 	}
 
-	//── cursor ─────────────────────────────────────────────────────────────
-
 	private static string cursorShown = "";
 	private static readonly Dictionary<int, IntPtr> cursors = new();
 
-	private static void Cursor( string name )
+	internal static void Cursor( string name )
 	{
 		name ??= "";
 		if ( name == cursorShown ) return;

@@ -63,7 +63,10 @@ internal sealed unsafe class GlRenderer
 		else Gl.VertexAttribPointer( location, count, type, normalised ? (byte)1 : (byte)0, stride, offset );
 	}
 
-	public void Draw( RootPanel root, int width, int height )
+	public void Draw( RootPanel root, int width, int height ) => Draw( root, width, height, Color.Black );
+
+	//The clear is what shows where no panel draws: see-through windows clear to nothing, so the desktop shows at their corners
+	public void Draw( RootPanel root, int width, int height, Color clear )
 	{
 		while ( GlTexture.Dead.TryDequeue( out var name ) ) Gl.DeleteTextures( 1, &name );
 
@@ -80,7 +83,9 @@ internal sealed unsafe class GlRenderer
 		Gl.Disable( Gl.CullFace );
 		Gl.Disable( Gl.ScissorTest );
 		Gl.Enable( Gl.FramebufferSrgb );
-		Gl.ClearColor( 0, 0, 0, 1 );
+		//Blending onto a clear of nothing leaves colours already multiplied by their coverage, which is what a compositor takes
+		var c = clear.ToLinear();
+		Gl.ClearColor( c.r * c.a, c.g * c.a, c.b * c.a, c.a );
 		Gl.Clear( Gl.ColorBufferBit );
 
 		//The shader writes straight alpha; what is under keeps its own coverage

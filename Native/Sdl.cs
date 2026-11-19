@@ -9,6 +9,7 @@ internal static unsafe partial class Sdl
 
 	public const uint InitVideo = 0x20;
 
+	public const ulong WindowFullscreen = 0x1;
 	public const ulong WindowOpenGl = 0x2;
 	public const ulong WindowHidden = 0x8;
 	public const ulong WindowBorderless = 0x10;
@@ -16,6 +17,7 @@ internal static unsafe partial class Sdl
 	public const ulong WindowMinimized = 0x40;
 	public const ulong WindowMaximized = 0x80;
 	public const ulong WindowHighPixelDensity = 0x2000;
+	public const ulong WindowTransparent = 0x40000000;
 
 	//SDL_GLAttr
 	public const int GlRedSize = 0, GlGreenSize = 1, GlBlueSize = 2, GlAlphaSize = 3, GlDoubleBuffer = 5, GlDepthSize = 6, GlStencilSize = 7;
@@ -26,8 +28,10 @@ internal static unsafe partial class Sdl
 	public const uint EventQuit = 0x100;
 	public const uint EventWindowShown = 0x202, EventWindowExposed = 0x204, EventWindowResized = 0x206, EventWindowPixelSizeChanged = 0x207;
 	public const uint EventWindowMaximized = 0x20A, EventWindowRestored = 0x20B, EventWindowMouseLeave = 0x20D;
+	public const uint EventWindowMouseEnter = 0x20C, EventWindowFocusGained = 0x20E;
 	public const uint EventWindowFocusLost = 0x20F, EventWindowCloseRequested = 0x210, EventWindowDisplayScaleChanged = 0x214;
 	public const uint EventKeyDown = 0x300, EventKeyUp = 0x301, EventTextInput = 0x303;
+	public const uint EventUser = 0x8000;
 	public const uint EventMouseMotion = 0x400, EventMouseButtonDown = 0x401, EventMouseButtonUp = 0x402, EventMouseWheel = 0x403;
 
 	//SDL_Keymod
@@ -41,6 +45,12 @@ internal static unsafe partial class Sdl
 	public struct Point
 	{
 		public int X, Y;
+	}
+
+	[StructLayout( LayoutKind.Sequential )]
+	public struct Rectangle
+	{
+		public int X, Y, W, H;
 	}
 
 	[LibraryImport( Lib )]
@@ -85,6 +95,10 @@ internal static unsafe partial class Sdl
 
 	[LibraryImport( Lib )]
 	public static partial ulong SDL_GetWindowFlags( IntPtr window );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_SetWindowFullscreen( IntPtr window, [MarshalAs( UnmanagedType.U1 )] bool fullscreen );
 
 	[LibraryImport( Lib )]
 	[return: MarshalAs( UnmanagedType.U1 )]
@@ -193,4 +207,55 @@ internal static unsafe partial class Sdl
 	[LibraryImport( Lib, StringMarshalling = StringMarshalling.Utf8 )]
 	[return: MarshalAs( UnmanagedType.U1 )]
 	public static partial bool SDL_SetBooleanProperty( uint props, string name, [MarshalAs( UnmanagedType.U1 )] bool value );
+
+	//Several windows on one GL context, displays, and waking the loop from another thread
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_GL_MakeCurrent( IntPtr window, IntPtr context );
+
+	[LibraryImport( Lib )]
+	public static partial uint SDL_GetWindowID( IntPtr window );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_HideWindow( IntPtr window );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_RaiseWindow( IntPtr window );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_SetWindowPosition( IntPtr window, int x, int y );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_SetWindowSize( IntPtr window, int w, int h );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_SyncWindow( IntPtr window );
+
+	[LibraryImport( Lib )]
+	public static partial uint SDL_GetPrimaryDisplay();
+
+	[LibraryImport( Lib )]
+	public static partial uint SDL_GetDisplayForWindow( IntPtr window );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_GetDisplayBounds( uint display, out Rectangle bounds );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_GetDisplayUsableBounds( uint display, out Rectangle bounds );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_StopTextInput( IntPtr window );
+
+	[LibraryImport( Lib )]
+	[return: MarshalAs( UnmanagedType.U1 )]
+	public static partial bool SDL_PushEvent( byte* ev );
 }

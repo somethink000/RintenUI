@@ -30,13 +30,18 @@ public static unsafe class AppWindow
 		else Sdl.SDL_MaximizeWindow( App.Window );
 	}
 
+	/// <summary>Whether the window covers the whole screen, as a player does.</summary>
+	public static bool Fullscreen
+	{
+		get => HasWindow && (Sdl.SDL_GetWindowFlags( App.Window ) & Sdl.WindowFullscreen) != 0;
+		set { if ( HasWindow ) Sdl.SDL_SetWindowFullscreen( App.Window, value ); }
+	}
+
 	/// <summary>What the taskbar calls the window.</summary>
 	public static void SetTitle( string title ) { if ( HasWindow ) Sdl.SDL_SetWindowTitle( App.Window, title ?? "" ); }
 
 	/// <summary>Closes the app.</summary>
 	public static void Close() => App.Quit();
-
-	//── frameless ──────────────────────────────────────────────────────────
 
 	private static bool frameless;
 	private static Rect[] dragAreas = [];
@@ -103,8 +108,6 @@ public static unsafe class AppWindow
 			return Sdl.HitNormal;
 		}
 	}
-
-	//── file boxes ─────────────────────────────────────────────────────────
 
 	/// <summary>Asks for a folder in the system's own dialog; null if it was dismissed. Blocks until answered.</summary>
 	public static string PickFolder( string title = null, string startIn = null ) => Show( 2, title, startIn, false )?.FirstOrDefault();
