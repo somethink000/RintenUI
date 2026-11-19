@@ -13,14 +13,14 @@ for native apps.
 | `Core/` | vectors, colour, `Rect`, `Length`, the html parser, attributes, logging | `Rinten.Core` |
 | `Filesystem/` | the files stylesheets, fonts and pictures come from, watched for changes | `Rinten.Filesystem` |
 | `Layout/` | flexbox layout | `Rinten.Layout` |
-| `UI/` | panels, stylesheets, Razor, controls, text, transitions, input, the panel renderer | `Rinten.UI` |
+| `UI/` | panels, stylesheets, Razor, controls, text, transitions, input, the panel renderer, the node graph editor (`UI/NodeGraph`) | `Rinten.UI` |
 | `ThirdParty/` | RichTextKit, and the types Razor's compiler calls into | |
-| `Native/` | a window for an app: SDL3 for the window and input, OpenGL 3.3 for drawing, the engine's box shader in GLSL | `Rinten.UI.Native` |
+| `Native/` | a window for an app: SDL3 for the window and input, OpenGL 3.3 for drawing, the engine's box shader in GLSL, `AudioOut` for sound to the speakers, `AppWindow.Fullscreen` | `Rinten.UI.Native` |
 | `Razor/` | Rinten's fork of Razor and `RazorGen`, which compiles an app's `.razor` the way the engine compiles a game's | build tool |
 
 ## Build
 
-You need the .NET 10 SDK.
+You need the .NET 11 SDK.
 
 ```
 dotnet build Rinten.UI.slnx
@@ -55,6 +55,9 @@ App.Run( "My app", () => new MyRoot() );   // MyRoot : AppRoot, written in Razor
   components as calls the toolkit's render tree leaves empty.
 - The app's files are its output folder: fonts in `fonts/`, stylesheets wherever `[StyleSheet( "/path.scss" )]` says.
 - `AppRoot` is a root panel the size of the window, scaled with the display, with `OnStart`, `OnUpdate` and `OnDestroy`.
+- More than one window (a desktop shell, a tool with palettes): `UiWindow.Open( title, w, h )` gives a window with its own `Root`,
+  `Background` (transparent shows the desktop through), `Shown`, `Size`, `CoverDisplay()`; `UiWindow.RunAll( tick )` runs them all
+  on one GL context and draws only while something changes. Each window has its own pointer; keys go to the focused panel.
 - `AppWindow` is the window as the engine's `AppWindow` puts it: title, frameless with drag areas, minimise and maximise, the system's file boxes.
   `Input.Keyboard.Down/Pressed` reads keys by their bind names.
 - `RINTEN_UI_SHOT=frame.png` (and `RINTEN_UI_SHOT_SECONDS`, 2 by default) writes one frame and closes, for looking at an app without a person at it.
