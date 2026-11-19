@@ -1,4 +1,4 @@
-
+﻿
 namespace Rinten.UI;
 
 public static class Clipboard
@@ -8,4 +8,7 @@ public static class Clipboard
 	{
 		UiPlatform.SetClipboard( text );
 	}
+
+	/// <summary>The clipboard's text, or empty</summary>
+	public static string GetText() => UiPlatform.GetClipboard() ?? "";
 }

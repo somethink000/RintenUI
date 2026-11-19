@@ -30,4 +30,7 @@
 		</None>
 	</ItemGroup>
 
+	<!-- The toolkit's own .razor controls (the app title bar), compiled the way an app's are -->
+	<Import Project="../Razor/Rinten.UI.Razor.targets" />
+
 </Project>

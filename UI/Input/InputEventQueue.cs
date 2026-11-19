@@ -91,6 +91,7 @@ class InputEventQueue
 
 	internal void AddButtonEvent( ButtonCode button, bool down, KeyboardModifiers modifiers )
 	{
+		PanelInput.Modifiers = modifiers;
 		var e = new ButtonEvent( button, down, modifiers );
 		ButtonEvents.Enqueue( e );
 	}

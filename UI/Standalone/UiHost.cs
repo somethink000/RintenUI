@@ -18,6 +18,17 @@ public static class UiHost
 	/// <summary>Plays a named interface sound.</summary>
 	public static Action<string> PlaySound { get; set; } = _ => { };
 
+	/// <summary>The desktop window the app runs in, for its own title bar; null where there is none. Rinten.UI.Native sets it.</summary>
+	public static IAppWindow Window { get; set; }
+
+	/// <summary>Reads a value kept under a key as JSON, null for none; kept for the run unless the app stores them somewhere.</summary>
+	public static Func<string, string> LoadKept { get; set; } = key => kept.TryGetValue( key, out var json ) ? json : null;
+
+	/// <summary>Keeps a value under a key as JSON - see LoadKept.</summary>
+	public static Action<string, string> SaveKept { get; set; } = ( key, json ) => kept[key] = json;
+
+	private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string> kept = new();
+
 	/// <summary>The screen root panels are laid out on when nothing lays them out itself.</summary>
 	public static Rect Screen { get; set; } = new( 0, 0, 1280, 720 );
 
@@ -36,4 +47,21 @@ public static class UiHost
 		public int ResourceGeneration => 0;
 		public uint TextureIndex( ulong handle ) => 0;
 	}
+}
+
+/// <summary>What a title bar drawn by the app asks of its window.</summary>
+public interface IAppWindow
+{
+	bool IsMaximized { get; }
+
+	/// <summary>No system frame: the app draws the caption and says where it drags with SetDragAreas.</summary>
+	bool Frameless { get; set; }
+
+	void Minimize();
+	void ToggleMaximized();
+	void Close();
+	void SetTitle( string title );
+
+	/// <summary>The parts of the caption that move the window, in its pixels; buttons stay out of them.</summary>
+	void SetDragAreas( params Rect[] areas );
 }

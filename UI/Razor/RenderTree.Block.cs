@@ -72,10 +72,11 @@ public partial class PanelRenderTreeBuilder : Microsoft.AspNetCore.Components.Re
 
 		}
 
-		//Built-in panel for an element name (div, img, label...), resolved without a type library
+		//Built-in panel for an element name, resolved without a type library. Not "i": IconPanel takes it, so the icon's
+		//font and text-transform apply to its own text and not to a label inside
 		internal static Panel Builtin( string elementName ) => elementName switch
 		{
-			"div" or "p" or "span" or "i" or "b" or "section" or "header" or "footer" => new Panel(),
+			"div" or "p" or "span" or "b" or "section" or "header" or "footer" => new Panel(),
 			"img" or "image" => new Image(),
 			"label" or "text" => new Label(),
 			"svg" => new SvgPanel(),

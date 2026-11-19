@@ -6,6 +6,15 @@ internal static partial class UiPlatform
 	//A panel for a razor or markup element name, by [Library], [Alias] or class name; null if no type answers to it
 	internal static partial Panel CreatePanel( string elementName );
 
+	//A panel of this type, made the way the program makes its types - the engine through its type library
+	internal static partial Panel CreatePanel( Type type );
+
+	//The page type a navigator shows for a url, and the route it answered by; null where none does
+	internal static partial (Type Type, string Url)? FindRoute( string url, string parentUrl );
+
+	//An enum's values as a list picks them: shown title, icon, value
+	internal static partial IEnumerable<(string Title, string Icon, object Value)> EnumOptions( Type type );
+
 	//Sets a property by name, the way a razor attribute is set
 	internal static partial void SetProperty( object target, string name, string value );
 
@@ -78,6 +87,11 @@ internal static partial class UiPlatform
 
 	//Puts text on the system clipboard
 	internal static partial void SetClipboard( string text );
+	internal static partial string GetClipboard();
+
+	//A small value kept between runs under a key - a text entry's history, a split's position; the fallback where none was kept
+	internal static partial T Kept<T>( string key, T fallback );
+	internal static partial void Keep<T>( string key, T value );
 }
 
 //A profiler section, ended by disposing it; what it holds is the host's

@@ -89,7 +89,14 @@ internal class PanelInput
 	{
 		if ( down ) mousebuttons.Add( code );
 		else mousebuttons.Remove( code );
+		Modifiers = modifiers;
 	}
+
+	//The modifiers the last key or button event carried; good enough to ask "is shift held" while dragging
+	internal static KeyboardModifiers Modifiers { get; set; }
+
+	/// <summary>Whether a mouse button is held right now, wherever the pointer is.</summary>
+	internal bool IsDown( ButtonCode code ) => mousebuttons.Contains( code );
 
 	//The pointer as somebody other than the window system reports it.
 	internal struct Pointer

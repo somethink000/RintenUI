@@ -1,0 +1,347 @@
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Rendering;
+using Rinten.UI.Navigation;
+
+namespace Rinten.UI;
+
+/// <summary>A simple button <see cref="Panel"/>.</summary>
+[Library( "Button" )]
+public class Button : Panel, INavigationEvent
+{
+	//The Label that displays Text.
+	protected Label TextLabel;
+
+	//The IconPanel that displays Icon.
+	protected IconPanel IconPanel;
+
+	//The Label that displays Help.
+	protected Label HelpLabel;
+
+	//The column on the right, holding the label and help
+	protected Panel RightColumn;
+
+	//The target link, if set
+	[Parameter] public string Href { get; set; }
+
+	/// <summary>Used for selection status in things like ButtonGroup</summary>
+	public virtual object Value { get; set; }
+
+	//More button options underneath the main button content.
+	[Parameter] public RenderFragment HoverMenu { get; set; }
+
+	//The look every button starts from; a game's or an app's own sheet goes over it
+	const string Styles = """
+		.button
+		{
+			position: relative;
+
+			//The glyph keeps its size; only the words give way. Without this a button narrower than its contents shrinks the icon into
+			//a sliver before it touches the text, because a flex child shrinks by default and an icon has no width of its own to defend.
+			> .icon
+			{
+				flex-shrink: 0;
+			}
+
+			> .button-right-column
+			{
+				flex-direction: column;
+
+				//Squeezable, which is what lets the label below cut instead of wrap: a flex child will not go narrower
+				//than its contents unless it is told it may, and the label's overflow never comes into play until it does.
+				min-width: 0;
+			}
+
+			//Button labels stay on one line; written out, not a mixin, since games don't get the preamble
+			> .button-right-column > .button-label,
+			> .button-right-column > .button-help
+			{
+				min-width: 0;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+		}
+
+		//default menu position is below
+		.button-hover-menu
+		{
+			position: absolute;
+			top: 100%;
+			flex-direction: column;
+
+			&.hidden
+			{
+				opacity: 0;
+				pointer-events: none;
+			}
+		}
+		""";
+
+	static Rinten.UI.StyleSheet sheet;
+
+	public Button()
+	{
+		AddClass( "button" );
+		StyleSheet.Add( sheet ??= Rinten.UI.StyleSheet.FromString( Styles, "button" ) );
+		AcceptsFocus = true;
+		FocusOnPress = false;
+
+		IconPanel = AddChild( new IconPanel( "people", "icon" ) );
+		IconPanel.Style.Display = DisplayMode.None;
+
+		RightColumn = AddChild( new Panel( this, "button-right-column" ) );
+		RightColumn.Style.Display = DisplayMode.None;
+
+		TextLabel = RightColumn.AddChild( new Label( "Empty Label", "button-label button-text" ) );
+		TextLabel.Style.Display = DisplayMode.None;
+
+		HelpLabel ??= RightColumn.AddChild( new Label( "", "button-help" ) );
+		HelpLabel.Style.Display = DisplayMode.None;
+	}
+
+	public Button( string text, Action action = default ) : this()
+	{
+		if ( text != null )
+			Text = text;
+
+		if ( action != null )
+			AddEventListener( "onclick", action );
+	}
+
+	public Button( string text, string icon ) : this()
+	{
+		if ( icon != null )
+			Icon = icon;
+
+		if ( text != null )
+			Text = text;
+	}
+
+	/// <summary>The button is disabled for some reason</summary>
+	[Parameter]
+	public bool Disabled
+	{
+		get => HasClass( "disabled" );
+		set => SetClass( "disabled", value );
+	}
+
+	//Allow external factors to force the active state
+	[Parameter] public bool Active { get; set; }
+
+	/// <summary>Enter or Space clicks a focused button.</summary>
+	public override void OnButtonTyped( ButtonEvent e )
+	{
+		if ( !Disabled && TryClickFromKeyboard( e ) )
+			return;
+
+		base.OnButtonTyped( e );
+	}
+
+	public Button( string text, string icon, Action onClick ) : this( text, icon )
+	{
+		AddEventListener( "onclick", onClick );
+	}
+
+	public Button( string text, string icon, string className, Action onClick ) : this( text, icon, onClick )
+	{
+		AddClass( className );
+	}
+
+	/// <summary>Text for the button.</summary>
+	[Parameter]
+	public string Text
+	{
+		get => TextLabel?.Text;
+		set
+		{
+			if ( !TextLabel.IsValid() ) return;
+
+			if ( string.IsNullOrEmpty( value ) )
+			{
+				TextLabel.Style.Display = DisplayMode.None;
+				TextLabel.Text = "";
+				return;
+			}
+
+			TextLabel.Style.Display = DisplayMode.Flex;
+			RightColumn.Style.Display = DisplayMode.Flex;
+			TextLabel.Text = value;
+		}
+	}
+
+	/// <summary>Help for the button.</summary>
+	[Parameter]
+	public string Help
+	{
+		get => HelpLabel?.Text;
+		set
+		{
+			if ( !HelpLabel.IsValid() ) return;
+
+			if ( string.IsNullOrEmpty( value ) )
+			{
+				HelpLabel.Style.Display = DisplayMode.None;
+				HelpLabel.Text = "";
+				return;
+			}
+
+			HelpLabel.Style.Display = DisplayMode.Flex;
+			RightColumn.Style.Display = DisplayMode.Flex;
+			HelpLabel.Text = value;
+		}
+	}
+
+	/// <summary>Deletes the <see cref="Text"/>.</summary>
+	public void DeleteText()
+	{
+		if ( !TextLabel.IsValid() ) return;
+
+		TextLabel?.Delete();
+		TextLabel = null;
+	}
+
+	/// <summary>Icon for the button.</summary>
+	[Parameter]
+	public string Icon
+	{
+		get => IconPanel?.Text;
+		set
+		{
+			if ( string.IsNullOrEmpty( value ) )
+			{
+				IconPanel.Style.Display = DisplayMode.None;
+				return;
+			}
+
+			IconPanel.Style.Display = DisplayMode.Flex;
+			IconPanel.Text = value;
+			SetClass( "has-icon", IconPanel.IsValid() );
+		}
+	}
+
+	/// <summary>Deletes the <see cref="Icon"/>.</summary>
+	public void DeleteIcon()
+	{
+		IconPanel.Style.Display = DisplayMode.None;
+	}
+
+	/// <summary>Set the text for the button. Calls <c>Text = value</c></summary>
+	public virtual void SetText( string text )
+	{
+		Text = text;
+	}
+
+	/// <summary>Imitate the button being clicked.</summary>
+	public void Click()
+	{
+		CreateEvent( new MousePanelEvent( "onclick", this, "mouseleft" ) );
+	}
+
+	public override void SetProperty( string name, string value )
+	{
+		switch ( name )
+		{
+			case "text":
+				{
+					SetText( value );
+					return;
+				}
+
+			case "html":
+				{
+					SetText( value );
+					return;
+				}
+
+			case "icon":
+				{
+					Icon = value;
+					return;
+				}
+
+			case "href":
+				{
+					Href = value;
+					return;
+				}
+
+			case "active":
+				{
+					SetClass( "active", value.ToBool() );
+					return;
+				}
+		}
+
+		base.SetProperty( name, value );
+	}
+
+	public override void SetContent( string value )
+	{
+		SetText( value?.Trim() ?? "" );
+	}
+
+	NavigationHost _navigatorCache;
+
+
+	public override void Tick()
+	{
+		base.Tick();
+		UpdateActiveState();
+	}
+
+	protected void UpdateActiveState()
+	{
+		if ( Active )
+		{
+			SetClass( "active", true );
+			return;
+		}
+
+		if ( string.IsNullOrWhiteSpace( Href ) )
+		{
+			SetClass( "active", false );
+			return;
+		}
+
+		_navigatorCache ??= Ancestors.OfType<NavigationHost>().FirstOrDefault();
+
+		var active = (_navigatorCache?.CurrentUrlMatches( Href ) ?? false);
+		SetClass( "active", active );
+	}
+
+	protected override void OnMouseDown( MousePanelEvent e )
+	{
+		base.OnMouseDown( e );
+
+		if ( !string.IsNullOrWhiteSpace( Href ) )
+		{
+			this.Navigate( Href );
+			e.StopPropagation();
+		}
+	}
+
+	protected override void BuildRenderTree( RenderTreeBuilder tree )
+	{
+		if ( HoverMenu != null )
+		{
+			var classes = "button-hover-menu";
+			if ( !HasHovered ) classes += " hidden";
+
+			tree.OpenElement<Panel>( 0 );
+			tree.AddAttribute( 1, "class", classes );
+
+			HoverMenu?.Invoke( tree );
+			tree.CloseElement();
+		}
+	}
+
+	protected override int BuildHash() => HashCode.Combine( HoverMenu, HasHovered );
+	//Any constant says "this has a render tree": the hash above is what rebuilds it, when the menu or the hover changes. This was
+	//the hash as a string - a new one every time anybody asked whether the button had a tree, which the tick does every frame.
+	protected override string GetRenderTreeChecksum() => "1";
+
+	void INavigationEvent.OnNavigated( string url )
+	{
+		UpdateActiveState();
+	}
+}

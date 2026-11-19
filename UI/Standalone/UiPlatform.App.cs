@@ -108,6 +108,33 @@ internal static partial class UiPlatform
 	internal static partial bool OnWeb { get => OperatingSystem.IsBrowser(); }
 
 	internal static partial void SetClipboard( string text ) => UiHost.SetClipboard( text );
+	internal static partial string GetClipboard() => UiHost.GetClipboard();
+
+	internal static partial Panel CreatePanel( Type type ) => type is null ? null : Activator.CreateInstance( type ) as Panel;
+
+	internal static partial IEnumerable<(string Title, string Icon, object Value)> EnumOptions( Type type )
+	{
+		foreach ( var field in type.GetFields( BindingFlags.Public | BindingFlags.Static ) )
+		{
+			if ( field.IsDefined( typeof( HideAttribute ), false ) ) continue;
+
+			yield return (field.GetCustomAttribute<TitleAttribute>()?.Value ?? field.Name.ToTitleCase(),
+				field.GetCustomAttribute<IconAttribute>()?.Value, field.GetValue( null ));
+		}
+	}
+
+	internal static partial (Type Type, string Url)? FindRoute( string url, string parentUrl )
+		=> Microsoft.AspNetCore.Components.RouteAttribute.FindValidTarget( url, parentUrl ) is { } found ? (found.Type, found.Attribute.Url) : null;
+
+	internal static partial T Kept<T>( string key, T fallback )
+	{
+		if ( UiHost.LoadKept( key ) is not { } json ) return fallback;
+
+		try { return System.Text.Json.JsonSerializer.Deserialize<T>( json ) ?? fallback; }
+		catch ( System.Text.Json.JsonException ) { return fallback; }
+	}
+
+	internal static partial void Keep<T>( string key, T value ) => UiHost.SaveKept( key, System.Text.Json.JsonSerializer.Serialize( value ) );
 }
 
 /// <summary>The pointer as the window an app runs in reports it.</summary>
