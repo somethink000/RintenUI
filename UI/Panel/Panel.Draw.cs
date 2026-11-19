@@ -123,14 +123,16 @@ public partial class Panel
 		{
 			var buf = UIDrawBuffer.Current;
 			var scale = buf.ScaleToScreen;
+			var device = buf.DeviceScale > 0 ? buf.DeviceScale : 1f;
 
-			var scope = new TextRendering.Scope( text, color, size * scale, font );
-			var tb = TextRendering.GetOrCreateTextBlock( scope, flags, rect.Size == default ? new Vector2( 8096 ) : rect.Size );
+			//Painted at device pixels and placed at its size in units, corner on a device pixel
+			var scope = new TextRendering.Scope( text, color, size * scale * device, font );
+			var tb = TextRendering.GetOrCreateTextBlock( scope, flags, rect.Size == default ? new Vector2( 8096 ) : rect.Size * device );
 			tb.MakeReady();
 			var texture = tb.Texture;
 			if ( texture is null ) return;
 
-			var textRect = rect.Align( texture.Size, flags ).Floor();
+			var textRect = rect.Align( texture.Size / device, flags ).SnapToPixels( device );
 			var tint = Color.White;
 			tint.a *= buf.Opacity;
 

@@ -13,6 +13,9 @@ public struct LayoutCascade
 	//Cascading Properties
 	public float Scale;
 
+	//Device pixels per layout unit of the root, carried down with the scale
+	internal float DeviceScale;
+
 	//Some properties cascade from their parent onto children if the children don't set them. Things like font size, color, cursor.
 	internal void ApplyCascading( Styles cached )
 	{

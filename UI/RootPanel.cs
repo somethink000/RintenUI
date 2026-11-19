@@ -152,6 +152,7 @@ public partial class RootPanel : Panel
 		var cascade = new LayoutCascade
 		{
 			Scale = Scale,
+			DeviceScale = DeviceScale,
 			Root = this,
 		};
 
@@ -160,7 +161,7 @@ public partial class RootPanel : Panel
 		Style.Width = PanelBounds.Width * (1 / Scale);
 		Style.Height = PanelBounds.Height * (1 / Scale);
 
-		var hash = HashCode.Combine( PanelBounds.Width, PanelBounds.Height, Scale );
+		var hash = HashCode.Combine( PanelBounds.Width, PanelBounds.Height, Scale, DeviceScale );
 		if ( hash != layoutHash )
 		{
 			layoutHash = hash;

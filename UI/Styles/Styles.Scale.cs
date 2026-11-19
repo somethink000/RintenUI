@@ -54,10 +54,7 @@
 			Length.Scale( ref _outlineoffset, scale );
 			Length.Scale( ref _scrollbarwidth, scale );
 
-			//The renderer places background and mask pictures against a panel's rect in screen pixels, so a size or
-			//position written in interface units has to go through the same scale as every other length. Left out, a
-			//baked background (see PanelBake) came out 1/scale of the panel at any scale above one, and the panel's
-			//default repeat filled the rest with a second copy of the picture.
+			//Background and mask pictures are placed against the scaled rect, so their lengths scale with it
 			Length.Scale( ref _backgroundsizex, scale );
 			Length.Scale( ref _backgroundsizey, scale );
 			Length.Scale( ref _backgroundpositionx, scale );

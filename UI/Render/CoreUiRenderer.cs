@@ -51,6 +51,12 @@ internal static class CoreUiRenderer
 		public uint ClipVerticalTop;
 		public uint ClipVerticalBottom;
 
+		/// <summary>Where the nearest masked ancestor's mask image is stretched, min xy max xy in screen pixels.</summary>
+		public Vector4 Mask;
+
+		/// <summary>Bindless index of that mask image, its top bit set to read luminance rather than alpha; 0 means no mask.</summary>
+		public uint MaskTexture;
+
 		/// <summary>The same colour on all four sides.</summary>
 		public Color32 Border
 		{
@@ -78,7 +84,7 @@ internal static class CoreUiRenderer
 	}
 
 	//What an ancestor with overflow hidden let through: the box in screen pixels, and the corners it was rounded by.
-	internal readonly record struct UiClip( Vector4 Rect, Vector4 Radii, Vector4 RadiiV = default )
+	internal readonly record struct UiClip( Vector4 Rect, Vector4 Radii, Vector4 RadiiV = default, Vector4 Mask = default, uint MaskTexture = 0 )
 	{
 		/// <summary>Whether anything was clipped at all.</summary>
 		public bool IsSet => Rect.z > Rect.x || Rect.w > Rect.y;
@@ -211,7 +217,7 @@ internal static class CoreUiRenderer
 	/// <summary>What the last walk did. Read by the profiler and the report.</summary>
 	public static WalkCounts LastWalk { get; private set; }
 
-	/// <summary>What the last walk of a window's own panels did - apart from the game's, whose walk happens inside the window's where the world is drawn, and used to overwrite these with its own nothing.</summary>
+	/// <summary>What the last walk of a window's own panels did, not counting the game screen walked inside it.</summary>
 	public static WalkCounts LastWindowWalk { get; private set; }
 
 	private static WalkCounts walk;
@@ -307,6 +313,7 @@ internal static class CoreUiRenderer
 
 		if ( style.BackgroundImage is { } background ) into.Add( (background, background.IsValid) );
 		if ( style.BorderImageSource is { } border ) into.Add( (border, border.IsValid) );
+		if ( style.MaskImage is { } mask ) into.Add( (mask, mask.IsValid) );
 		if ( panel is Rinten.UI.Image { Texture: { } picture } ) into.Add( (picture, picture.IsValid) );
 	}
 
@@ -455,6 +462,7 @@ internal static class CoreUiRenderer
 		public Vector2 RootSize;
 		public Length RootFontSize;
 		public float RootScale;
+		public float DeviceScale;
 
 		/// <summary>Something in the frame is drawn by time or by a path the walk cannot vouch for; such a frame is never put out again.</summary>
 		public bool Live;
@@ -556,7 +564,8 @@ internal static class CoreUiRenderer
 		}
 
 		if ( frame.Resources != UiPlatform.Device.ResourceGeneration
-			|| frame.RootSize != Length.RootSize || !frame.RootFontSize.Equals( Length.RootFontSize ) || frame.RootScale != Length.RootScale )
+			|| frame.RootSize != Length.RootSize || !frame.RootFontSize.Equals( Length.RootFontSize ) || frame.RootScale != Length.RootScale
+			|| frame.DeviceScale != root.DeviceScale )
 		{
 			RefusedResources++;
 			return false;
@@ -641,6 +650,7 @@ internal static class CoreUiRenderer
 		frame.RootSize = Length.RootSize;
 		frame.RootFontSize = Length.RootFontSize;
 		frame.RootScale = Length.RootScale;
+		frame.DeviceScale = root.DeviceScale;
 		frame.Live = frameLive;
 
 		frame.Textures.Clear();
@@ -747,8 +757,7 @@ internal static class CoreUiRenderer
 		DropCovered( output );
 		NoteBiggest( output );
 
-		//The window's own walk, kept apart from the game's: the game's screen is walked inside
-		//this one, where the world is drawn, and used to overwrite these with its own nothing.
+		//Kept apart from the game screen's walk, which runs inside this one where the world is drawn
 		LastWindowWalk = walk;
 
 		//The counters the walk keeps are worth nothing unless somebody reads them. Boxes against Batches is the whole of how well the interface batches; Visited
@@ -895,6 +904,7 @@ internal static class CoreUiRenderer
 					first.Fill.a == 255 &&
 					first.Radii == Vector4.Zero &&
 					first.ClipRadii == Vector4.Zero &&
+					first.MaskTexture == 0 &&
 					seenRight - seenLeft >= 1.0f && seenBottom - seenTop >= 1.0f;
 
 				if ( solid ) covers.Add( new Vector4( seenLeft, seenTop, seenRight, seenBottom ) );
@@ -1152,6 +1162,10 @@ internal static class CoreUiRenderer
 			//are circles, which is every panel that never wrote a slash. See ResolveVertical.
 			var cornersV = ResolveVertical( style, rect, ref corners );
 
+			//A mask covers the panel and everything in it, so it goes on before anything of the panel's is drawn
+			if ( style.MaskImage is { IsValid: true } && uploadTexture is not null )
+				clip = Masked( clip, style, rect, transform, uploadTexture );
+
 			//Overflow hidden clips children to the panel's bounds and corners, but not its own shadow
 			var given = clip;
 			var clipsOwn = style.OverflowX == OverflowMode.Hidden || style.OverflowY == OverflowMode.Hidden ||
@@ -1222,8 +1236,7 @@ internal static class CoreUiRenderer
 
 				var background = style.BackgroundColor ?? Color.Transparent;
 
-				//Each side's own width, which is what a stylesheet actually says: an underline is a bottom border and nothing else, and a seam
-				//down a panel is a left one. Only the left width used to be read, so an underline drew nothing and a left border drew a ring.
+				//Each side's own width: an underline is a bottom border and nothing else, a seam down a panel a left one
 				var borderSides = new Vector4(
 					style.BorderLeftWidth?.GetPixels( rect.Width ) ?? 0.0f,
 					style.BorderTopWidth?.GetPixels( rect.Height ) ?? 0.0f,
@@ -1290,18 +1303,24 @@ internal static class CoreUiRenderer
 						UiFill.Backdrop, 0.0f, filter, filter2, blur, null, transform, radiiV: cornersV );
 				}
 
+				//A panel with a background picture gets its border once, over the picture (below). Drawn here as well,
+				//the two copies add up along the rounded corners, where the picture's anti-aliased edge lets this one through.
+				var pictured = uploadTexture is not null && style.BackgroundImage is { IsValid: true }
+					&& ( style.BackgroundGradient.ColorOffsets.IsDefaultOrEmpty || BackgroundSized( style, rect ) );
+				var borderUnder = borderSeen && !pictured;
+
 				if ( TryGetColorSvHue( panel, out var svHue ) )
 				{
 					AddBox( output, rect, corners, Color.White.WithAlpha( opacity ),
 						Color.Transparent, 0, texture: 0, clip, UiFill.ColorSv, 0.0f,
 						new Vector4( svHue / 360f, 0, 0, 0 ), default, 0.0f, null, transform, radiiV: cornersV );
 				}
-				else if ( background.a > 0.001f || borderSeen )
+				else if ( background.a > 0.001f || borderUnder )
 				{
 					//The sides ride in the filter slot, which a plain box has no other use for - filters belong to a backdrop and offsets to a shadow, and this is neither.
 					AddBox( output, rect, corners,
 						background.WithAlpha( background.a * opacity ),
-						Color.Transparent, borderSeen ? borderWidth : 0.0f,
+						Color.Transparent, borderUnder ? borderWidth : 0.0f,
 						texture: 0, clip, filter: borderSides, transform: transform,
 						radiiV: cornersV, sides: borderColours, borderStyle: borderStyle );
 				}
@@ -1380,6 +1399,15 @@ internal static class CoreUiRenderer
 						AddBox( output, rect, corners, tint, Color.Transparent, 0, image, clip,
 							kind, angle, default, default, 0.0f, null, transform, uv, fills, radiiV: cornersV,
 							pixelated: style.ImageRendering == ImageRendering.Point );
+					}
+
+					//The border goes over the picture, as in CSS, and only here (see borderUnder): under an opaque
+					//picture its straight sides would vanish and only broken dots along the rounded corners show
+					if ( borderSeen )
+					{
+						AddBox( output, rect, corners, Color.Transparent, Color.Transparent, borderWidth,
+							texture: 0, clip, filter: borderSides, transform: transform,
+							radiiV: cornersV, sides: borderColours, borderStyle: borderStyle );
 					}
 				}
 
@@ -1579,8 +1607,33 @@ internal static class CoreUiRenderer
 		Log.Error( $"ui build: a panel tree is deeper than {MaxWalkDepth}, so it is drawn no further. From the deepest up:{chain}" );
 	}
 
-	//Intersects two clips: exact if one contains the other, else the shared box without rounding
+	//Intersects two clips; the outer one's mask goes on down to everything inside it
 	private static UiClip Narrow( UiClip outer, UiClip inner )
+		=> NarrowRect( outer, inner ) with { Mask = outer.Mask, MaskTexture = outer.MaskTexture };
+
+	//The clip with this panel's mask image stretched over where its box ended up; unchanged where the picture has no slot to be read from
+	private static UiClip Masked( UiClip clip, Styles style, Rect rect, Matrix? transform, TextureUploader uploadTexture )
+	{
+		if ( !Bindless ) return clip;
+
+		var handle = Uploaded( uploadTexture, style.MaskImage );
+		if ( handle == 0 ) return clip;
+
+		var slot = UiPlatform.Device.TextureIndex( handle );
+		if ( slot == 0 ) return clip;
+
+		if ( recording ) recordSlots.Add( (handle, slot) );
+		NoteSlot( handle, slot );
+
+		var area = transform is null ? rect : Moved( rect, transform.Value );
+
+		if ( style.MaskMode == MaskMode.Luminance ) slot |= 0x80000000u;
+
+		return clip with { Mask = new Vector4( area.Left, area.Top, area.Right, area.Bottom ), MaskTexture = slot };
+	}
+
+	//Exact if one contains the other, else the shared box without rounding
+	private static UiClip NarrowRect( UiClip outer, UiClip inner )
 	{
 		if ( !outer.IsSet ) return inner;
 
@@ -1716,7 +1769,9 @@ internal static class CoreUiRenderer
 
 			//Where the label put its text, less the room the picture keeps around it for whatever spills out of the letters, and less how far
 			//the text is scrolled to keep the caret in view - which is what the caret is placed by, so the text has to move by the same amount.
-			var at = new Rect( label._textRect.Position - block.TextureMargin - label.CaretScroll, picture.Size ).Floor();
+			//The picture is device pixels; it is placed in layout units with its corner on a device pixel, so it is not resampled
+			var at = new Rect( label._textRect.Position - block.TextureMargin - label.CaretScroll, picture.Size / block.RasterScale )
+				.SnapToPixels( block.RasterScale );
 
 			AddBox( output, at, Vector4.Zero, Color.White.WithAlpha( opacity ), Color.Transparent, 0,
 				handle, clip, UiFill.Text, transform: transform );
@@ -2387,6 +2442,7 @@ internal static class CoreUiRenderer
 
 		buffer.Collector = custom;
 		buffer.ScaleToScreen = panel.ScaleToScreen;
+		buffer.DeviceScale = panel.DeviceScale;
 		buffer.Opacity = opacity;
 
 		//Where the output stood before the panel drew. What OnDraw puts out is made from state the walk cannot
@@ -2418,14 +2474,17 @@ internal static class CoreUiRenderer
 	//is tessellated with. A transform that shrinks the panel makes each screen pixel more of its pixels; nought transform, one.
 	private static float PixelSize( Matrix? transform, Vector2 at )
 	{
-		if ( transform is not { } t ) return 1.0f;
+		//A device pixel is this much of a layout unit before any transform
+		var device = 1.0f / MathF.Max( walking?.DeviceScale ?? 1.0f, 0.01f );
+
+		if ( transform is not { } t ) return device;
 
 		var o = Place( t, at.x, at.y );
 		var x = ( Place( t, at.x + 1.0f, at.y ) - o ).Length;
 		var y = ( Place( t, at.x, at.y + 1.0f ) - o ).Length;
 		var scale = MathF.Min( x, y );
 
-		return scale > 1e-4f && float.IsFinite( scale ) ? 1.0f / scale : 1.0f;
+		return scale > 1e-4f && float.IsFinite( scale ) ? device / scale : device;
 	}
 
 	//A vector shape's fill and stroke, from its tessellation - which is only made again
@@ -2506,6 +2565,8 @@ internal static class CoreUiRenderer
 				Misc = misc,
 				Clip = clip.Rect,
 				ClipRadii = clip.Radii,
+				Mask = clip.Mask,
+				MaskTexture = clip.MaskTexture,
 				ClipVerticalTop = clipVertical.Top,
 				ClipVerticalBottom = clipVertical.Bottom,
 				Filter = new Vector4( t.End, 0.0f, 0.0f, 0.0f ),
@@ -2651,6 +2712,8 @@ internal static class CoreUiRenderer
 			Misc = misc,
 			Clip = clip.Rect,
 			ClipRadii = clip.Radii,
+			Mask = clip.Mask,
+			MaskTexture = clip.MaskTexture,
 			Filter = filter,
 			Filter2 = filter2,
 			Texture = slot,

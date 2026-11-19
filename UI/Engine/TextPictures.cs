@@ -6,7 +6,7 @@ internal static class TextPictures
 {
 	//Everything a laid-out block depends on. Style is the block's font hash, which has the text in it too; the text is here as well so two strings
 	//can never share an answer by a hash alone. Mipped is a world panel's picture, which carries its smaller levels and so is not a screen label's.
-	internal readonly record struct Key( string Text, int Style, bool NoWrap, int Width, int Height, bool Mipped );
+	internal readonly record struct Key( string Text, int Style, bool NoWrap, int Width, int Height, bool Mipped, float Scale );
 
 	internal sealed class Picture
 	{

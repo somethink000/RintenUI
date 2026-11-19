@@ -201,6 +201,20 @@ public struct Rect : System.IEquatable<Rect>
 		return r;
 	}
 
+	/// <summary>The same size with its corner moved down onto a device pixel, at this many pixels per unit.</summary>
+	public readonly Rect SnapToPixels( float pixelsPerUnit )
+	{
+		var r = this;
+		var x = MathF.Floor( r.left * pixelsPerUnit ) / pixelsPerUnit;
+		var y = MathF.Floor( r.top * pixelsPerUnit ) / pixelsPerUnit;
+
+		r.right += x - r.left;
+		r.bottom += y - r.top;
+		r.left = x;
+		r.top = y;
+		return r;
+	}
+
 	/// <summary>Returns a Rect with position and size rounded to closest integer values.</summary>
 	public readonly Rect Round()
 	{

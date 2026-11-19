@@ -49,6 +49,24 @@ public static partial class TextRendering
 		[Group( "Effects" )]
 		[JsonInclude] public Shadow ShadowUnder;
 
+		/// <summary>The same text with every length in it - size, spacing, outlines, shadows - this many times bigger: what it is at another pixel density.</summary>
+		public readonly Scope Scaled( float by )
+		{
+			var scope = this;
+
+			scope.FontSize *= by;
+			scope.LetterSpacing *= by;
+			scope.WordSpacing *= by;
+			scope.Outline.Size *= by;
+			scope.OutlineUnder.Size *= by;
+			scope.Shadow.Size *= by;
+			scope.Shadow.Offset *= by;
+			scope.ShadowUnder.Size *= by;
+			scope.ShadowUnder.Offset *= by;
+
+			return scope;
+		}
+
 		public override int GetHashCode()
 		{
 			var hc = new HashCode();

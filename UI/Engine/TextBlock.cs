@@ -22,7 +22,7 @@ internal sealed class TextBlock : IDisposable
 	public bool IsTruncated { get; internal set; }
 	public bool IsHtml { get; internal set; }
 
-	//What was measured the other way goes when this changes. It is not part of the font hash that decides a rebuild, and the sizes are kept per width - every one of them worked out under the answer this used to give.
+	//Not in the font hash that decides a rebuild, so the per-width sizes measured under the old value go when it changes
 	/// <summary>Whether the panel this belongs to says the text stays on one line.</summary>
 	public bool NoWrap
 	{
@@ -65,6 +65,22 @@ internal sealed class TextBlock : IDisposable
 		}
 	}
 
+	/// <summary>Device pixels per layout unit the picture is painted at; its size in layout units is its pixels over this.</summary>
+	public float RasterScale
+	{
+		get;
+		internal set
+		{
+			value = value > 0.0f ? value : 1.0f;
+			if ( field == value ) return;
+
+			ReleaseTexture();
+			DisposeLast();
+
+			field = value;
+		}
+	} = 1.0f;
+
 	//The text the block was last built from, which is what its sizes and pictures are kept under.
 	string builtText;
 
@@ -79,7 +95,7 @@ internal sealed class TextBlock : IDisposable
 		var w = float.IsNaN( width ) || ( DoesNotWrap && !overflow ) ? int.MinValue : width.CeilToInt();
 		var h = overflow && !float.IsNaN( height ) ? height.CeilToInt() : int.MinValue;
 
-		return new TextPictures.Key( builtText, FontHash, DoesNotWrap, w, h, Mipped );
+		return new TextPictures.Key( builtText, FontHash, DoesNotWrap, w, h, Mipped, RasterScale );
 	}
 
 	internal void SetText( string text )
@@ -260,7 +276,7 @@ internal sealed class TextBlock : IDisposable
 			textrect.Top = textrect.Bottom - BlockSize.y;
 		}
 
-		textrect.Size = Texture.Size;
+		textrect.Size = Texture.Size / RasterScale;
 		textrect.Position -= EffectMargin.Position;
 
 		var color = Color.White;
@@ -268,7 +284,7 @@ internal sealed class TextBlock : IDisposable
 
 		if ( color.a <= 0 ) return;
 
-		var rect = textrect.Floor();
+		var rect = textrect.SnapToPixels( RasterScale );
 
 		var desc = new BoxDrawDescriptor( rect, new Color( 0, 0, 0, 0 ) )
 		{
@@ -734,10 +750,11 @@ internal sealed class TextBlock : IDisposable
 			Gradient.Center = new SKPoint( centerX, centerY );
 		}
 
-		//The picture rounded up to a step of 32, the rest clear: changing text mostly stays in the step,
-		//so its picture is written over rather than remade
-		width = ( width + 31 ) & ~31;
-		height = ( height + 31 ) & ~31;
+		//In device pixels, then rounded up to a step of 32, the rest clear: changing text mostly
+		//stays in the step, so its picture is written over rather than remade
+		var scale = RasterScale;
+		width = ( (int)MathF.Ceiling( width * scale ) + 31 ) & ~31;
+		height = ( (int)MathF.Ceiling( height * scale ) + 31 ) & ~31;
 
 		using var perfScope = UiPlatform.Scope( "TextBlock.RebuildTexture" );
 		var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -757,6 +774,7 @@ internal sealed class TextBlock : IDisposable
 			canvas.Save();
 			canvas.ClipRect( new SKRect( 0, 0, width, height ) );
 			canvas.Clear( Style.TextColor.WithAlpha( 0 ) );
+			canvas.Scale( scale );
 
 			if ( ShouldDrawSelection && (SelectionStart > 0 || SelectionEnd > 0) )
 			{

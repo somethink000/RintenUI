@@ -300,7 +300,23 @@ namespace Rinten.UI
 				styleContent = UiPlatform.Phrase( styleContent[1..] );
 			}
 
+			if ( styleContent is null && Masked && !string.IsNullOrEmpty( Text ) )
+				return new string( '\u2022', new StringInfo( Text ).LengthInTextElements );
+
 			return styleContent ?? Text ?? string.Empty;
+		}
+
+		/// <summary>Draws a dot for each character - a password - while Text keeps what was typed.</summary>
+		public bool Masked
+		{
+			get;
+			set
+			{
+				if ( field == value ) return;
+
+				field = value;
+				SetNeedsPreLayout();
+			}
 		}
 
 		/// <summary>Ask for another pass where the style now says to draw something else.</summary>
@@ -409,6 +425,7 @@ namespace Rinten.UI
 			if ( !IsVisible ) return;
 			if ( ComputedStyle is null ) return;
 
+			if ( _textBlock is not null ) _textBlock.RasterScale = DeviceScale;
 			_textBlock?.SizeFinalized( Box.RectInner.Width, Box.RectInner.Height );
 
 			if ( !sizeFinalized )

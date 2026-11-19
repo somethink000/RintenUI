@@ -26,6 +26,9 @@ internal class UIDrawBuffer
 	/// <summary>The scale factor from logical to physical pixels for the current panel. Set before OnDraw().</summary>
 	public float ScaleToScreen = 1f;
 
+	//Device pixels per unit of what is drawn into this - see Panel.DeviceScale
+	public float DeviceScale = 1f;
+
 	/// <summary>Accumulated CSS opacity for the current panel. Set before OnDraw().</summary>
 	public float Opacity = 1f;
 

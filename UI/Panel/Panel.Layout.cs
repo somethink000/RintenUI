@@ -49,6 +49,10 @@ public partial class Panel
 	[Hide]
 	public float ScaleFromScreen => 1.0f / ScaleToScreen;
 
+	/// <summary>Device pixels per layout unit where this is drawn (CSS devicePixelRatio): set on the root, carried down by layout, never laid out in.</summary>
+	[Hide]
+	public float DeviceScale { get; internal set; } = 1.0f;
+
 	int LayoutCount = 0;
 
 
@@ -192,6 +196,7 @@ public partial class Panel
 		PushLengthValues();
 
 		ScaleToScreen = cascade.Scale;
+		DeviceScale = cascade.DeviceScale;
 		var previousOpacity = Opacity;
 		Opacity = ComputedStyle.Opacity.Value * (Parent?.Opacity ?? 1.0f);
 		UpdateVisibility();

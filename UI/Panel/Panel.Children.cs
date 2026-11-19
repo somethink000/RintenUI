@@ -132,6 +132,7 @@ public partial class Panel
 
 				//We can set some inherited stuff here to get us started
 				ScaleToScreen = _parent.ScaleToScreen;
+				DeviceScale = _parent.DeviceScale;
 			}
 
 			NoteStructureChanged();
